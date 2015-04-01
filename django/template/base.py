@@ -1192,10 +1192,16 @@ class Library(object):
             class InclusionNode(TagHelperNode):
 
                 def render(self, context):
+                    """
+                    Renders the specified template and context. Caches the
+                    template object in render_context to avoid reparsing and
+                    loading when used in a for loop.
+                    """
                     resolved_args, resolved_kwargs = self.get_resolved_arguments(context)
                     _dict = func(*resolved_args, **resolved_kwargs)
 
-                    if not getattr(self, 'nodelist', False):
+                    t = context.render_context.get(self)
+                    if t is None:
                         from django.template.loader import get_template, select_template
                         if isinstance(file_name, Template):
                             t = file_name
@@ -1203,7 +1209,7 @@ class Library(object):
                             t = select_template(file_name)
                         else:
                             t = get_template(file_name)
-                        self.nodelist = t.nodelist
+                        context.render_context[self] = t
                     new_context = context_class(_dict, **{
                         'autoescape': context.autoescape,
                         'current_app': context.current_app,
@@ -1217,7 +1223,7 @@ class Library(object):
                     csrf_token = context.get('csrf_token', None)
                     if csrf_token is not None:
                         new_context['csrf_token'] = csrf_token
-                    return self.nodelist.render(new_context)
+                    return t.render(new_context)
 
             function_name = (name or
                 getattr(func, '_decorated_function', func).__name__)
