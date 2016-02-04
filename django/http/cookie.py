@@ -1,5 +1,7 @@
 from __future__ import absolute_import, unicode_literals
 
+import re
+
 from django.utils.encoding import force_str
 from django.utils import six
 from django.utils.six.moves import http_cookies
@@ -69,6 +71,7 @@ else:
 
 
 def parse_cookie(cookie):
+    cookie = re.sub('[^\x20-\x7e]+', 'X', cookie)
     if cookie == '':
         return {}
     if not isinstance(cookie, http_cookies.BaseCookie):
